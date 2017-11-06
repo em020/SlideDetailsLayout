@@ -4,6 +4,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -21,6 +22,12 @@ public class MainActivity extends AppCompatActivity implements ISlideCallback {
         setContentView(R.layout.activity_main);
 
         mSlideDetailsLayout = (SlideDetailsLayout) findViewById(R.id.slidedetails);
+        mSlideDetailsLayout.setOnSlideDetailsListener(new SlideDetailsLayout.OnSlideDetailsListener() {
+            @Override
+            public void onStatucChanged(SlideDetailsLayout.Status status) {
+                Log.d("edmund", "onStatucChanged-" + status.name());
+            }
+        });
 
         FragmentManager fm = getSupportFragmentManager();
         fm.beginTransaction().replace(R.id.slidedetails_front, new ListFragment()).commit();

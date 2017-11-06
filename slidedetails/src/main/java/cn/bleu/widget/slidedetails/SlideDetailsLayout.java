@@ -44,6 +44,13 @@ public class SlideDetailsLayout extends ViewGroup {
         void onStatucChanged(Status status);
     }
 
+    public interface OnSlideListenerV2 {
+
+        void onStateChanged(Status status);
+
+        void onSlide(float slideOffset, float maxOffset);
+    }
+
     public enum Status {
         /** Panel is closed */
         CLOSE,
@@ -83,6 +90,7 @@ public class SlideDetailsLayout extends ViewGroup {
     private VelocityTracker mVelocityTracker;
 
     private OnSlideDetailsListener mOnSlideDetailsListener;
+    private OnSlideListenerV2 mOnSlideListenerV2;
 
     public SlideDetailsLayout(Context context) {
         this(context, null);
@@ -111,6 +119,10 @@ public class SlideDetailsLayout extends ViewGroup {
      */
     public void setOnSlideDetailsListener(OnSlideDetailsListener listener) {
         this.mOnSlideDetailsListener = listener;
+    }
+
+    public void setOnSlideListenerV2(OnSlideListenerV2 onSlideListenerV2) {
+        mOnSlideListenerV2 = onSlideListenerV2;
     }
 
     /**
@@ -148,6 +160,10 @@ public class SlideDetailsLayout extends ViewGroup {
         this.mPercent = percent;
     }
 
+    public Status getStatus() {
+        return mStatus;
+    }
+
     @Override
     protected LayoutParams generateDefaultLayoutParams() {
         return new MarginLayoutParams(MarginLayoutParams.WRAP_CONTENT, MarginLayoutParams.WRAP_CONTENT);
@@ -176,7 +192,7 @@ public class SlideDetailsLayout extends ViewGroup {
         mBehindView = getChildAt(1);
 
         // set behindview's visibility to GONE before show.
-        mBehindView.setVisibility(GONE);
+        /*mBehindView.setVisibility(GONE);*/
         if (mDefaultPanel == 1) {
             post(new Runnable() {
                 @Override
@@ -218,7 +234,13 @@ public class SlideDetailsLayout extends ViewGroup {
         int top;
         int bottom;
 
-        final int offset = (int) mSlideOffset;
+        final int offset/* = (int) mSlideOffset*/;
+
+        if (Math.abs(mSlideOffset) > b - t) {
+            offset = (int) (Math.signum(mSlideOffset) * (b - t));
+        } else {
+            offset = (int) mSlideOffset;
+        }
 
         View child;
         for (int i = 0; i < getChildCount(); i++) {
@@ -408,6 +430,10 @@ public class SlideDetailsLayout extends ViewGroup {
         if (SlideDebug.DEBUG) {
             Log.v("slide", "process, offset: " + mSlideOffset);
         }
+
+        if (mOnSlideListenerV2 != null) {
+            mOnSlideListenerV2.onSlide(mSlideOffset, -getMeasuredHeight());
+        }
         // relayout
         requestLayout();
     }
@@ -471,6 +497,12 @@ public class SlideDetailsLayout extends ViewGroup {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 mSlideOffset = (float) animation.getAnimatedValue();
+                if (SlideDebug.DEBUG) {
+                    Log.v("slide", "process, offset: " + mSlideOffset);
+                }
+                if (mOnSlideListenerV2 != null) {
+                    mOnSlideListenerV2.onSlide(mSlideOffset, -getMeasuredHeight());
+                }
                 requestLayout();
             }
         });
@@ -485,6 +517,10 @@ public class SlideDetailsLayout extends ViewGroup {
 
                     if (null != mOnSlideDetailsListener) {
                         mOnSlideDetailsListener.onStatucChanged(mStatus);
+                    }
+
+                    if (null != mOnSlideListenerV2) {
+                        mOnSlideListenerV2.onStateChanged(mStatus);
                     }
                 }
             }
@@ -527,42 +563,118 @@ public class SlideDetailsLayout extends ViewGroup {
         return innerCanChildScrollVertically(mTarget, -direction);
     }
 
+//    private boolean innerCanChildScrollVertically(View view, int direction) {
+//        if (view instanceof ViewGroup) {
+//            final ViewGroup vGroup = (ViewGroup) view;
+//            View child;
+//            boolean result;
+//            for (int i = 0; i < vGroup.getChildCount(); i++) {
+//                child = vGroup.getChildAt(i);
+//                if (child instanceof View) {
+//                    result = ViewCompat.canScrollVertically(child, direction);
+//                } else {
+//                    result = innerCanChildScrollVertically(child, direction);
+//                }
+//
+//                if (result) {
+//                    return true;
+//                }
+//            }
+//        }
+//
+//        return ViewCompat.canScrollVertically(view, direction);
+//    }
+//
+//    protected boolean canListViewSroll(AbsListView absListView) {
+//        if (mStatus == Status.OPEN) {
+//            return absListView.getChildCount() > 0
+//                   && (absListView.getFirstVisiblePosition() > 0 || absListView.getChildAt(0)
+//                                                                               .getTop() <
+//                                                                    absListView.getPaddingTop());
+//        } else {
+//            final int count = absListView.getChildCount();
+//            return count > 0
+//                   && (absListView.getLastVisiblePosition() < count - 1
+//                       || absListView.getChildAt(count - 1)
+//                                     .getBottom() > absListView.getMeasuredHeight());
+//        }
+//    }
+
+
+
+
     private boolean innerCanChildScrollVertically(View view, int direction) {
-        if (view instanceof ViewGroup) {
-            final ViewGroup vGroup = (ViewGroup) view;
-            View child;
-            boolean result;
-            for (int i = 0; i < vGroup.getChildCount(); i++) {
-                child = vGroup.getChildAt(i);
-                if (child instanceof View) {
-                    result = ViewCompat.canScrollVertically(child, direction);
-                } else {
-                    result = innerCanChildScrollVertically(child, direction);
+        return canScrollVertiV2(view, direction);
+    }
+
+//    private boolean canScrollVerti(View view, int direction) {
+//
+//        if (view instanceof ViewGroup) {
+//
+//            if (view instanceof ScrollingView) {
+//
+//                return view.canScrollVertically(direction);
+//
+//            } else {
+//
+//                final ViewGroup vGroup = (ViewGroup) view;
+//
+//                for (int i = 0; i < vGroup.getChildCount(); i++) {
+//
+//                    View child = vGroup.getChildAt(i);
+//
+//                    boolean result = canScrollVerti(child, direction);
+//
+//                    if (result) {
+//                        return true;
+//                    }
+//                }
+//
+//                return false;
+//            }
+//
+//
+//        } else {
+//
+//            return view.canScrollVertically(direction);
+//
+//        }
+//    }
+
+    private boolean canScrollVertiV2(View view, int direction) {
+
+        if (view.canScrollVertically(direction)) {
+
+            return true;
+
+        } else {
+
+            if (view instanceof ViewGroup) {
+
+                final ViewGroup vGroup = (ViewGroup) view;
+
+                for (int i = 0; i < vGroup.getChildCount(); i++) {
+
+                    View child = vGroup.getChildAt(i);
+
+                    boolean result = canScrollVertiV2(child, direction);
+
+                    if (result) {
+                        return true;
+                    }
+
                 }
 
-                if (result) {
-                    return true;
-                }
+                return false;
+
+
+            } else {
+                return false;
             }
         }
-
-        return ViewCompat.canScrollVertically(view, direction);
     }
 
-    protected boolean canListViewSroll(AbsListView absListView) {
-        if (mStatus == Status.OPEN) {
-            return absListView.getChildCount() > 0
-                   && (absListView.getFirstVisiblePosition() > 0 || absListView.getChildAt(0)
-                                                                               .getTop() <
-                                                                    absListView.getPaddingTop());
-        } else {
-            final int count = absListView.getChildCount();
-            return count > 0
-                   && (absListView.getLastVisiblePosition() < count - 1
-                       || absListView.getChildAt(count - 1)
-                                     .getBottom() > absListView.getMeasuredHeight());
-        }
-    }
+
 
     @Override
     protected Parcelable onSaveInstanceState() {
