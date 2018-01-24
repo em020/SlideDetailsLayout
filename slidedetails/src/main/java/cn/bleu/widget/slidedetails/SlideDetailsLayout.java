@@ -643,34 +643,31 @@ public class SlideDetailsLayout extends ViewGroup {
 
     private boolean canScrollVertiV2(View view, int direction) {
 
-        if (view.canScrollVertically(direction)) {
+        if (ViewCompat.canScrollVertically(view, direction)) {
 
             return true;
 
-        } else {
+        } else if (view instanceof ViewGroup) {
 
-            if (view instanceof ViewGroup) {
+            final ViewGroup vGroup = (ViewGroup) view;
 
-                final ViewGroup vGroup = (ViewGroup) view;
+            for (int i = 0; i < vGroup.getChildCount(); i++) {
 
-                for (int i = 0; i < vGroup.getChildCount(); i++) {
+                View child = vGroup.getChildAt(i);
 
-                    View child = vGroup.getChildAt(i);
+                boolean result = canScrollVertiV2(child, direction);
 
-                    boolean result = canScrollVertiV2(child, direction);
-
-                    if (result) {
-                        return true;
-                    }
-
+                if (result) {
+                    return true;
                 }
 
-                return false;
-
-
-            } else {
-                return false;
             }
+
+            return false;
+
+
+        } else {
+            return false;
         }
     }
 
